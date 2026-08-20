@@ -13,7 +13,7 @@ import board
 
 load_dotenv(override=True)
 
-MODEL = "baseten:deepseek-ai/DeepSeek-V4-Pro-0813"
+MODEL = "groq:whisper-large-v3"
 
 
 def create_orchestrator_tools(team: Team, goal_id: int):

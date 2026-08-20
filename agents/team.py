@@ -2,6 +2,8 @@ import os
 from typing import Any, Dict, List, Optional
 from dotenv import load_dotenv
 from deepagents import create_deep_agent
+from langchain_core.runnables import schema
+from langchain.agents.structured_output import ToolStrategy
 import board
 from agents import prompts
 from tools import (
@@ -11,13 +13,15 @@ from tools import (
     search_tool,
 )
 
+from agents import schemas as sch
+
 from langchain.agents import create_agent
 from langgraph.checkpoint.memory import MemorySaver
 from deepagents.backends import FilesystemBackend
 
 load_dotenv(override=True)
 
-MODEL = "baseten:deepseek-ai/DeepSeek-V4-Pro-0813"
+MODEL = "groq:whisper-large-v3"
 SANDBOX_DIR = os.path.join(os.path.dirname(os.path.abspath(__file__)), "sandbox")
 
 
@@ -32,22 +36,27 @@ class Team:
 
     async def build_team(self, reset_db: bool = True) -> Dict[str, Any]:
         """Loads tools, builds agent instances, and resets the SQLite board."""
-        # Ensure sandbox directory exists
+    
         os.makedirs(SANDBOX_DIR, exist_ok=True)
 
-        # 1. Reset/Initialize SQLite Board
         if reset_db:
             board.reset_board()
 
-        # 2. Retrieve all tools (Base + MCP Playwright & Filesystem)
+      
         all_tools, mcp_sessions = await get_all_tools(SANDBOX_DIR)
         self.sessions = [mcp_sessions]
 
-        # Separate MCP tools by server source for targeted assignment
+
         mcp_filesystem_tools = [t for t in all_tools if t.name.startswith("filesystem_")]
         mcp_browser_tools = [t for t in all_tools if t.name.startswith("playwright_")]
 
-        # 3. Define role tool assignments
+        # schemas_mapping = {
+        #   "designer": ToolStrategy(sch.SystemDesignOutput),
+        #   "backend": ToolStrategy(sch.BackendEngineerOutput),
+        #   "frontend": ToolStrategy(sch.FrontendEngineerOutput),
+        #    "qa": ToolStrategy(sch.QualityAssuranceOutput),
+        # }
+
         role_tool_mapping = {
             "designer": [search_tool] + mcp_filesystem_tools,
             "backend": [search_tool] + mcp_filesystem_tools,
@@ -62,14 +71,14 @@ class Team:
             "qa": prompts.test_engineer_prompt,
         }
 
-        # 4. Instantiate agents
         for role, system_prompt in agent_configs.items():
             self.agents[role] = create_deep_agent(
                 model=MODEL,
                 tools=role_tool_mapping[role],
                 system_prompt=agent_configs[role],
                 checkpointer=self.memory,
-                backend=FilesystemBackend(root_dir=".", virtual_mode=True)
+                backend=FilesystemBackend(root_dir=".", virtual_mode=True),
+                #response_format=schemas_mapping[role]
             )
 
         return self.agents
