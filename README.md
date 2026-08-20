@@ -11,8 +11,7 @@
 
 ## 🚀 Live Demo & Artifacts
 
-* **Live Interactive Workspace:** [https://buildit-agentic-studio.hf.space](https://buildit-agentic-studio.hf.space) *(Replace with your deployment link)*
-* **Demo Video / Walkthrough:** [Watch on YouTube](https://youtube.com)
+> Currently in development . will soon be deploying
 
 ---
 
